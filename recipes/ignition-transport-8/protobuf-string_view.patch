@@ -1,0 +1,205 @@
+diff -ru a/include/gz/transport/detail/Node.hh b/include/gz/transport/detail/Node.hh
+--- a/include/gz/transport/detail/Node.hh	2026-10-23 11:59:42.963787966 +0300
++++ b/include/gz/transport/detail/Node.hh	2026-10-23 11:59:43.011267061 +0300
+@@ -31,7 +31,7 @@
+         const std::string &_topic,
+         const AdvertiseMessageOptions &_options)
+     {
+-      return this->Advertise(_topic, MessageT().GetTypeName(), _options);
++      return this->Advertise(_topic, std::string(MessageT().GetTypeName()), _options);
+     }
+ 
+     //////////////////////////////////////////////////
+@@ -264,7 +264,7 @@
+         this->Shared()->myReplierAddress,
+         this->Shared()->replierId.ToString(),
+         this->Shared()->pUuid, this->NodeUuid(),
+-        RequestT().GetTypeName(), ReplyT().GetTypeName(), _options);
++        std::string(RequestT().GetTypeName()), std::string(ReplyT().GetTypeName()), _options);
+ 
+       if (!this->Shared()->AdvertisePublisher(publisher))
+       {
+@@ -417,8 +417,8 @@
+         std::lock_guard<std::recursive_mutex> lk(this->Shared()->mutex);
+         localResponserFound = this->Shared()->repliers.FirstHandler(
+               fullyQualifiedTopic,
+-              RequestT().GetTypeName(),
+-              ReplyT().GetTypeName(),
++              std::string(RequestT().GetTypeName()),
++              std::string(ReplyT().GetTypeName()),
+               repHandler);
+       }
+ 
+@@ -455,7 +455,7 @@
+         if (this->Shared()->TopicPublishers(fullyQualifiedTopic, addresses))
+         {
+           this->Shared()->SendPendingRemoteReqs(fullyQualifiedTopic,
+-            RequestT().GetTypeName(), ReplyT().GetTypeName());
++            std::string(RequestT().GetTypeName()), std::string(ReplyT().GetTypeName()));
+         }
+         else
+         {
+@@ -548,7 +548,7 @@
+       // If the responser is within my process.
+       IRepHandlerPtr repHandler;
+       if (this->Shared()->repliers.FirstHandler(fullyQualifiedTopic,
+-        _request.GetTypeName(), _reply.GetTypeName(), repHandler))
++        std::string(_request.GetTypeName()), std::string(_reply.GetTypeName()), repHandler))
+       {
+         // There is a responser in my process, let's use it.
+         _result = repHandler->RunLocalCallback(_request, _reply);
+@@ -564,7 +564,7 @@
+       if (this->Shared()->TopicPublishers(fullyQualifiedTopic, addresses))
+       {
+         this->Shared()->SendPendingRemoteReqs(fullyQualifiedTopic,
+-          _request.GetTypeName(), _reply.GetTypeName());
++          std::string(_request.GetTypeName()), std::string(_reply.GetTypeName()));
+       }
+       else
+       {
+diff -ru a/include/gz/transport/RepHandler.hh b/include/gz/transport/RepHandler.hh
+--- a/include/gz/transport/RepHandler.hh	2026-10-23 11:59:42.965787993 +0300
++++ b/include/gz/transport/RepHandler.hh	2026-10-23 11:59:43.012486779 +0300
+@@ -192,13 +192,13 @@
+       // Documentation inherited.
+       public: virtual std::string ReqTypeName() const
+       {
+-        return Req().GetTypeName();
++        return std::string(Req().GetTypeName());
+       }
+ 
+       // Documentation inherited.
+       public: virtual std::string RepTypeName() const
+       {
+-        return Rep().GetTypeName();
++        return std::string(Rep().GetTypeName());
+       }
+ 
+       /// \brief Create a specific protobuf message given its serialized data.
+diff -ru a/include/gz/transport/ReqHandler.hh b/include/gz/transport/ReqHandler.hh
+--- a/include/gz/transport/ReqHandler.hh	2026-10-23 11:59:42.968788034 +0300
++++ b/include/gz/transport/ReqHandler.hh	2026-10-23 11:59:43.014325662 +0300
+@@ -284,13 +284,13 @@
+       // Documentation inherited.
+       public: virtual std::string ReqTypeName() const
+       {
+-        return Req().GetTypeName();
++        return std::string(Req().GetTypeName());
+       }
+ 
+       // Documentation inherited.
+       public: virtual std::string RepTypeName() const
+       {
+-        return Rep().GetTypeName();
++        return std::string(Rep().GetTypeName());
+       }
+ 
+       /// \brief Protobuf message containing the request's parameters.
+@@ -381,7 +381,7 @@
+       public: virtual std::string ReqTypeName() const
+       {
+         if (this->reqMsg)
+-          return this->reqMsg->GetTypeName();
++          return std::string(this->reqMsg->GetTypeName());
+         else
+         {
+           std::cerr << "ReqHandler::ReqTypeName() Warning: Using ReqTypeName() "
+@@ -394,7 +394,7 @@
+       public: virtual std::string RepTypeName() const
+       {
+         if (this->repMsg)
+-          return this->repMsg->GetTypeName();
++          return std::string(this->repMsg->GetTypeName());
+         else
+         {
+           std::cerr << "ReqHandler::RepTypeName() Warning: Using RepTypeName() "
+diff -ru a/include/gz/transport/SubscriptionHandler.hh b/include/gz/transport/SubscriptionHandler.hh
+--- a/include/gz/transport/SubscriptionHandler.hh	2026-10-23 11:59:42.960787925 +0300
++++ b/include/gz/transport/SubscriptionHandler.hh	2026-10-23 11:59:43.008064622 +0300
+@@ -185,7 +185,7 @@
+       // Documentation inherited.
+       public: std::string TypeName()
+       {
+-        return T().GetTypeName();
++        return std::string(T().GetTypeName());
+       }
+ 
+       /// \brief Set the callback for this handler.
+diff -ru a/src/gz.cc b/src/gz.cc
+--- a/src/gz.cc	2026-10-23 11:59:42.977788156 +0300
++++ b/src/gz.cc	2026-10-23 11:59:43.033750731 +0300
+@@ -163,7 +163,7 @@
+   {
+     // Create the node and advertise the topic
+     Node node;
+-    auto pub = node.Advertise(_topic, msg->GetTypeName());
++    auto pub = node.Advertise(_topic, std::string(msg->GetTypeName()));
+ 
+     // Publish the message
+     if (pub)
+diff -ru a/src/Node.cc b/src/Node.cc
+--- a/src/Node.cc	2026-10-23 11:59:42.974788115 +0300
++++ b/src/Node.cc	2026-10-23 11:59:43.032593682 +0300
+@@ -280,12 +280,12 @@
+   const std::string &publisherMsgType = this->dataPtr->publisher.MsgTypeName();
+ 
+   // Check that the msg type matches the topic type previously advertised.
+-  if (publisherMsgType != _msg.GetTypeName())
++  if (publisherMsgType != std::string(_msg.GetTypeName()))
+   {
+     std::cerr << "Node::Publisher::Publish() Type mismatch.\n"
+               << "\t* Type advertised: "
+               << this->dataPtr->publisher.MsgTypeName()
+-              << "\n\t* Type published: " << _msg.GetTypeName() << std::endl;
++              << "\n\t* Type published: " << std::string(_msg.GetTypeName()) << std::endl;
+     return false;
+   }
+ 
+@@ -358,7 +358,7 @@
+           }
+ 
+           if (handler.second->TypeName() != kGenericMessageType &&
+-              handler.second->TypeName() != _msg.GetTypeName())
++              handler.second->TypeName() != std::string(_msg.GetTypeName()))
+           {
+             continue;
+           }
+@@ -384,7 +384,7 @@
+           }
+ 
+           if (rawHandler->TypeName() != kGenericMessageType &&
+-              rawHandler->TypeName() != _msg.GetTypeName())
++              rawHandler->TypeName() != std::string(_msg.GetTypeName()))
+           {
+             continue;
+           }
+@@ -423,7 +423,7 @@
+     };
+ 
+     if (!this->dataPtr->shared->Publish(this->dataPtr->publisher.Topic(),
+-          msgBuffer, msgSize, myDeallocator, _msg.GetTypeName()))
++          msgBuffer, msgSize, myDeallocator, std::string(_msg.GetTypeName())))
+     {
+       return false;
+     }
+diff -ru a/src/NodeShared.cc b/src/NodeShared.cc
+--- a/src/NodeShared.cc	2026-10-23 11:59:42.971788074 +0300
++++ b/src/NodeShared.cc	2026-10-23 11:59:43.025704809 +0300
+@@ -736,7 +736,7 @@
+ 
+     // If 'reptype' is msgs::Empty", this is a oneway request
+     // and we don't send response
+-    if (repType == msgs::Empty().GetTypeName())
++    if (repType == std::string(msgs::Empty().GetTypeName()))
+     {
+       return;
+     }
+@@ -1105,7 +1105,7 @@
+ 
+       // Remove the handler associated to this service request. We won't
+       // receive a response because this is a oneway request.
+-      if (_repType == msgs::Empty().GetTypeName())
++      if (_repType == std::string(msgs::Empty().GetTypeName()))
+       {
+         this->requests.RemoveHandler(_topic, nodeUuid, reqUuid);
+       }

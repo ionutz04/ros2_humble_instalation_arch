@@ -1,0 +1,10 @@
+# makepkg artifacts, in case someone runs makepkg directly inside recipes/
+recipes/*/src/
+recipes/*/pkg/
+recipes/*/*.pkg.tar.*
+recipes/*/*.tar.gz
+*.log
+# colcon output, in case WS points here
+build/
+install/
+log/

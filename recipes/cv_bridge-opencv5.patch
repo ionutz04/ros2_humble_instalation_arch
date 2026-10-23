@@ -1,0 +1,60 @@
+diff --git a/cv_bridge/CMakeLists.txt b/cv_bridge/CMakeLists.txt
+index 005cd12..42a64e9 100644
+--- a/cv_bridge/CMakeLists.txt
++++ b/cv_bridge/CMakeLists.txt
+@@ -36,6 +36,9 @@ endif()
+ find_package(rcpputils REQUIRED)
+ find_package(sensor_msgs REQUIRED)
+ 
++find_package(OpenCV 5 QUIET
++  COMPONENTS opencv_core opencv_imgproc opencv_imgcodecs CONFIG)
++if(NOT OpenCV_FOUND)
+ find_package(OpenCV 4 QUIET
+   COMPONENTS
+     opencv_core
+@@ -52,6 +55,7 @@ if(NOT OpenCV_FOUND)
+     CONFIG
+   )
+ endif()
++endif()
+ 
+ if(NOT ANDROID)
+   ament_python_install_package(${PROJECT_NAME}
+diff --git a/cv_bridge/include/cv_bridge/cv_bridge.h b/cv_bridge/include/cv_bridge/cv_bridge.h
+index 60f8bfa..427ef80 100644
+--- a/cv_bridge/include/cv_bridge/cv_bridge.h
++++ b/cv_bridge/include/cv_bridge/cv_bridge.h
+@@ -42,7 +42,6 @@
+ #include <sensor_msgs/image_encodings.hpp>
+ #include <opencv2/core/core.hpp>
+ #include <opencv2/imgproc/imgproc.hpp>
+-#include <opencv2/imgproc/types_c.h>
+ #include <cv_bridge/cv_bridge_export.h>
+ 
+ #include <memory>
+diff --git a/cv_bridge/src/CMakeLists.txt b/cv_bridge/src/CMakeLists.txt
+index 85aa121..a13b927 100644
+--- a/cv_bridge/src/CMakeLists.txt
++++ b/cv_bridge/src/CMakeLists.txt
+@@ -37,7 +37,7 @@ if(NOT ANDROID)
+     target_compile_definitions(${PROJECT_NAME}_boost PRIVATE -DBOOST_PYTHON_STATIC_LIB -DHAVE_SNPRINTF)
+   endif()
+ 
+-  if(OpenCV_VERSION_MAJOR VERSION_EQUAL 4)
++  if(OpenCV_VERSION_MAJOR VERSION_GREATER_EQUAL 4)
+     target_compile_definitions(${PROJECT_NAME}_boost PRIVATE OPENCV_VERSION_4)
+   endif()
+ 
+diff --git a/cv_bridge/src/module_opencv3.cpp b/cv_bridge/src/module_opencv3.cpp
+index ac93f08..f04f02a 100644
+--- a/cv_bridge/src/module_opencv3.cpp
++++ b/cv_bridge/src/module_opencv3.cpp
+@@ -2,7 +2,7 @@
+ 
+ #include "module.hpp"
+ 
+-#include "opencv2/core/types_c.h"
++#include "opencv2/core.hpp"
+ 
+ #include "opencv2/opencv_modules.hpp"
+ 
